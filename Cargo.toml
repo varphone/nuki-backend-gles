@@ -1,0 +1,20 @@
+﻿[package]
+name = "nuki-backend-gles"
+version = "0.1.0"
+authors = ["Varphone Wong <varphone@qq.com>"]
+keywords = ["ui", "widgets", "gui", "interface", "graphics"]
+description = "An OpenGL ES drawing backend for the Rust bindings for the Nuklear 2D immediate GUI library"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/varphone/nuki-backend-gles.git"
+homepage = "https://github.com/varphone/nuki-backend-gles"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gl = { git = "https://github.com/varphone/gl-rs", rev = "HEAD" }
+nuki = { git = "https://github.com/varphone/nuki-rs", rev = "HEAD" }
+
+[dev-dependencies]
+egl = { git = "https://github.com/varphone/egl-rs", rev = "HEAD" }
