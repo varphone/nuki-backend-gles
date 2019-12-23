@@ -1,4 +1,4 @@
-use gl::{GLfloat, GLint, GLsizei, GLsizeiptr, GLubyte, GLuint};
+use gls::{GLfloat, GLint, GLsizei, GLsizeiptr, GLubyte, GLuint};
 use nuki::{
     Allocator, AntiAliasing, Buffer, Context, ConvertConfig, DrawNullTexture,
     DrawVertexLayoutAttribute, DrawVertexLayoutElements, DrawVertexLayoutFormat, FontAtlas,
@@ -28,42 +28,42 @@ impl RenderState {
     pub fn new(alloc: &mut Allocator) -> Self {
         let mut state: Self = Default::default();
         // Create shader program
-        state.prog = gl::create_program().unwrap();
-        state.vert_shdr = gl::create_shader(gl::VERTEX_SHADER).unwrap();
-        state.frag_shdr = gl::create_shader(gl::FRAGMENT_SHADER).unwrap();
+        state.prog = gls::create_program().unwrap();
+        state.vert_shdr = gls::create_shader(gls::raw::VERTEX_SHADER).unwrap();
+        state.frag_shdr = gls::create_shader(gls::raw::FRAGMENT_SHADER).unwrap();
         let vertex_shader = include_bytes!("shaders/gles2-vs.glsl");
-        gl::shader_source(
+        gls::shader_source(
             state.vert_shdr,
             String::from_utf8(vertex_shader.to_vec()).unwrap(),
         );
         let fragment_shader = include_bytes!("shaders/gles2-fs.glsl");
-        gl::shader_source(
+        gls::shader_source(
             state.frag_shdr,
             String::from_utf8(fragment_shader.to_vec()).unwrap(),
         );
-        gl::compile_shader(state.vert_shdr);
+        gls::compile_shader(state.vert_shdr);
         assert_eq!(
-            gl::get_shaderiv(state.vert_shdr, gl::COMPILE_STATUS),
-            gl::TRUE as GLint
+            gls::get_shaderiv(state.vert_shdr, gls::raw::COMPILE_STATUS),
+            gls::raw::TRUE as GLint
         );
-        gl::compile_shader(state.frag_shdr);
+        gls::compile_shader(state.frag_shdr);
         assert_eq!(
-            gl::get_shaderiv(state.frag_shdr, gl::COMPILE_STATUS),
-            gl::TRUE as GLint
+            gls::get_shaderiv(state.frag_shdr, gls::raw::COMPILE_STATUS),
+            gls::raw::TRUE as GLint
         );
-        gl::attach_shader(state.prog, state.vert_shdr);
-        gl::attach_shader(state.prog, state.frag_shdr);
-        gl::link_program(state.prog);
+        gls::attach_shader(state.prog, state.vert_shdr);
+        gls::attach_shader(state.prog, state.frag_shdr);
+        gls::link_program(state.prog);
         assert_eq!(
-            gl::get_programiv(state.prog, gl::LINK_STATUS),
-            gl::TRUE as GLint
+            gls::get_programiv(state.prog, gls::raw::LINK_STATUS),
+            gls::raw::TRUE as GLint
         );
 
-        state.uniform_tex = gl::get_uniform_location(state.prog, "Texture").unwrap_or(-1);
-        state.uniform_proj = gl::get_uniform_location(state.prog, "ProjMtx").unwrap_or(-1);
-        state.attrib_pos = gl::get_attrib_location(state.prog, "Position").unwrap_or(-1);
-        state.attrib_uv = gl::get_attrib_location(state.prog, "TexCoord").unwrap_or(-1);
-        state.attrib_col = gl::get_attrib_location(state.prog, "Color").unwrap_or(-1);
+        state.uniform_tex = gls::get_uniform_location(state.prog, "Texture").unwrap_or(-1);
+        state.uniform_proj = gls::get_uniform_location(state.prog, "ProjMtx").unwrap_or(-1);
+        state.attrib_pos = gls::get_attrib_location(state.prog, "Position").unwrap_or(-1);
+        state.attrib_uv = gls::get_attrib_location(state.prog, "TexCoord").unwrap_or(-1);
+        state.attrib_col = gls::get_attrib_location(state.prog, "Color").unwrap_or(-1);
 
         state.vs = std::mem::size_of::<Vertex>() as GLsizei;
         state.vp = unsafe { &(*(::std::ptr::null::<Vertex>())).position as *const _ as GLsizei };
@@ -72,35 +72,35 @@ impl RenderState {
 
         // Allocate the buffers
         let mut buffers: [GLuint; 2] = [0, 0];
-        gl::gen_buffers(&mut buffers);
+        gls::gen_buffers(&mut buffers);
         state.vbo = buffers[0];
         state.ebo = buffers[1];
 
-        gl::bind_texture(gl::TEXTURE_2D, 0);
-        gl::bind_buffer(gl::ARRAY_BUFFER, 0);
-        gl::bind_buffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+        gls::bind_texture(gls::raw::TEXTURE_2D, 0);
+        gls::bind_buffer(gls::raw::ARRAY_BUFFER, 0);
+        gls::bind_buffer(gls::raw::ELEMENT_ARRAY_BUFFER, 0);
 
         state
     }
 
     pub fn add_font_texture(&mut self, image: &[u8], width: u32, height: u32) -> Handle {
         let mut tex: GLuint = 0;
-        gl::gen_textures(unsafe { std::mem::transmute::<&mut GLuint, &mut [GLuint; 1]>(&mut tex) });
-        gl::bind_texture(gl::TEXTURE_2D, tex);
-        gl::tex_parameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
-        gl::tex_parameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
-        gl::tex_image2d(
-            gl::TEXTURE_2D,
+        gls::gen_textures(unsafe { std::mem::transmute::<&mut GLuint, &mut [GLuint; 1]>(&mut tex) });
+        gls::bind_texture(gls::raw::TEXTURE_2D, tex);
+        gls::tex_parameteri(gls::raw::TEXTURE_2D, gls::raw::TEXTURE_MIN_FILTER, gls::raw::LINEAR as GLint);
+        gls::tex_parameteri(gls::raw::TEXTURE_2D, gls::raw::TEXTURE_MAG_FILTER, gls::raw::LINEAR as GLint);
+        gls::tex_image2d(
+            gls::raw::TEXTURE_2D,
             0,
-            gl::RGBA as GLint,
+            gls::raw::RGBA as GLint,
             width as GLsizei,
             height as GLsizei,
             0,
-            gl::RGBA,
-            gl::UNSIGNED_BYTE,
+            gls::raw::RGBA,
+            gls::raw::UNSIGNED_BYTE,
             Some(image),
         );
-        gl::bind_texture(gl::TEXTURE_2D, 0);
+        gls::bind_texture(gls::raw::TEXTURE_2D, 0);
         self.font_texs.push(tex);
         Handle::from_id(tex as i32)
     }
@@ -210,67 +210,67 @@ impl Drawer {
 
     /// Draw all elements in the context.
     pub fn draw(&mut self, ctx: &mut Context, options: &DrawOptions) {
-        gl::enable(gl::BLEND);
-        gl::blend_equation(gl::FUNC_ADD);
-        gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-        gl::disable(gl::CULL_FACE);
-        gl::disable(gl::DEPTH_TEST);
-        gl::enable(gl::SCISSOR_TEST);
-        gl::active_texture(gl::TEXTURE0);
+        gls::enable(gls::raw::BLEND);
+        gls::blend_equation(gls::raw::FUNC_ADD);
+        gls::blend_func(gls::raw::SRC_ALPHA, gls::raw::ONE_MINUS_SRC_ALPHA);
+        gls::disable(gls::raw::CULL_FACE);
+        gls::disable(gls::raw::DEPTH_TEST);
+        gls::enable(gls::raw::SCISSOR_TEST);
+        gls::active_texture(gls::raw::TEXTURE0);
 
         // Setup program
-        gl::use_program(self.state.prog);
-        gl::uniform1i(self.state.uniform_tex, 0);
+        gls::use_program(self.state.prog);
+        gls::uniform1i(self.state.uniform_tex, 0);
         let mvp = self.ortho(options);
-        gl::uniform_matrix4fv(self.state.uniform_proj, gl::FALSE, &mvp);
+        gls::uniform_matrix4fv(self.state.uniform_proj, gls::raw::FALSE, &mvp);
 
         // Bind buffers
-        gl::bind_buffer(gl::ARRAY_BUFFER, self.state.vbo);
-        gl::bind_buffer(gl::ELEMENT_ARRAY_BUFFER, self.state.ebo);
+        gls::bind_buffer(gls::raw::ARRAY_BUFFER, self.state.vbo);
+        gls::bind_buffer(gls::raw::ELEMENT_ARRAY_BUFFER, self.state.ebo);
 
         // Buffer setup
-        gl::enable_vertex_attrib_array(self.state.attrib_pos as GLuint);
-        gl::enable_vertex_attrib_array(self.state.attrib_uv as GLuint);
-        gl::enable_vertex_attrib_array(self.state.attrib_col as GLuint);
+        gls::enable_vertex_attrib_array(self.state.attrib_pos as GLuint);
+        gls::enable_vertex_attrib_array(self.state.attrib_uv as GLuint);
+        gls::enable_vertex_attrib_array(self.state.attrib_col as GLuint);
 
-        let a: gl::GLsizeiptr = 0;
+        let a: gls::GLsizeiptr = 0;
 
-        gl::vertex_attrib_pointer(
+        gls::vertex_attrib_pointer(
             self.state.attrib_pos as GLuint,
             2,
-            gl::FLOAT,
-            gl::FALSE,
+            gls::raw::FLOAT,
+            gls::raw::FALSE,
             self.state.vs,
             self.state.vp as GLsizeiptr,
         );
-        gl::vertex_attrib_pointer(
+        gls::vertex_attrib_pointer(
             self.state.attrib_uv as GLuint,
             2,
-            gl::FLOAT,
-            gl::FALSE,
+            gls::raw::FLOAT,
+            gls::raw::FALSE,
             self.state.vs,
             self.state.vt as GLsizeiptr,
         );
-        gl::vertex_attrib_pointer(
+        gls::vertex_attrib_pointer(
             self.state.attrib_col as GLuint,
             4,
-            gl::UNSIGNED_BYTE,
-            gl::TRUE,
+            gls::raw::UNSIGNED_BYTE,
+            gls::raw::TRUE,
             self.state.vs,
             self.state.vc as GLsizeiptr,
         );
 
-        gl::buffer_data(
-            gl::ARRAY_BUFFER,
+        gls::buffer_data::<u8>(
+            gls::raw::ARRAY_BUFFER,
             self.vbuf.total() as GLsizeiptr,
             None,
-            gl::STREAM_DRAW,
+            gls::raw::STREAM_DRAW,
         );
-        gl::buffer_data(
-            gl::ELEMENT_ARRAY_BUFFER,
+        gls::buffer_data::<u8>(
+            gls::raw::ELEMENT_ARRAY_BUFFER,
             self.ebuf.total() as GLsizeiptr,
             None,
-            gl::STREAM_DRAW,
+            gls::raw::STREAM_DRAW,
         );
 
         self.cmds.clear();
@@ -289,8 +289,8 @@ impl Drawer {
         let ebytes = unsafe {
             std::slice::from_raw_parts::<u8>(self.ebuf.memory_const() as *const u8, elen)
         };
-        gl::buffer_sub_data(gl::ARRAY_BUFFER, 0, vbytes);
-        gl::buffer_sub_data(gl::ELEMENT_ARRAY_BUFFER, 0, ebytes);
+        gls::buffer_sub_data(gls::raw::ARRAY_BUFFER, 0, vbytes);
+        gls::buffer_sub_data(gls::raw::ELEMENT_ARRAY_BUFFER, 0, ebytes);
 
         let mut eptr: *mut u16 = std::ptr::null_mut();
         for cmd in ctx.draw_command_iterator(&self.cmds) {
@@ -301,20 +301,20 @@ impl Drawer {
             let count = cmd.elem_count();
             let mut id = cmd.texture().id().unwrap();
             self.clip_rect(cmd.clip_rect(), options);
-            gl::bind_texture(gl::TEXTURE_2D, id as GLuint);
-            gl::draw_elements(
-                gl::TRIANGLES,
+            gls::bind_texture(gls::raw::TEXTURE_2D, id as GLuint);
+            gls::draw_elements(
+                gls::raw::TRIANGLES,
                 count as GLsizei,
-                gl::UNSIGNED_SHORT,
+                gls::raw::UNSIGNED_SHORT,
                 eptr as GLsizeiptr,
             );
             eptr = unsafe { eptr.add(count as usize) };
         }
 
-        gl::disable(gl::BLEND);
-        gl::enable(gl::CULL_FACE);
-        gl::enable(gl::DEPTH_TEST);
-        gl::disable(gl::SCISSOR_TEST);
+        gls::disable(gls::raw::BLEND);
+        gls::enable(gls::raw::CULL_FACE);
+        gls::enable(gls::raw::DEPTH_TEST);
+        gls::disable(gls::raw::SCISSOR_TEST);
     }
 
     pub fn add_font_texture(&mut self, data: &[u8], width: u32, height: u32) -> Handle {
@@ -336,7 +336,7 @@ impl Drawer {
         let y = ((options.display_size.1 as f32 - (rect.y + rect.h)) * fy) as GLint;
         let w = (rect.w * fx) as GLsizei;
         let h = (rect.h * fy) as GLsizei;
-        gl::scissor(x, y, w, h);
+        gls::scissor(x, y, w, h);
     }
 
     pub fn ortho(&self, options: &DrawOptions) -> [f32; 16usize] {
