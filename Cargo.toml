@@ -13,8 +13,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gls = { git = "https://github.com/varphone/gls-rs", rev = "HEAD" }
-nuki = { git = "https://github.com/varphone/nuki-rs", rev = "HEAD" }
+gls = "0.1"
+nuki = "0.1"
 
 [target.'cfg(unix)'.dev-dependencies]
 egl = { git = "https://github.com/varphone/egl-rs", rev = "HEAD" }
