@@ -181,8 +181,12 @@ impl Drawer {
         // Setup program
         let mvp = self.get_projection(options);
         self.state.prog.bind();
-        self.state.prog.set_uniform(self.state.mvp_uloc, gls::uniform!(mat4(&mvp)));
-        self.state.prog.set_uniform(self.state.texture_uloc, gls::uniform!(int(0)));
+        self.state
+            .prog
+            .set_uniform(self.state.mvp_uloc, gls::uniform!(mat4(&mvp)));
+        self.state
+            .prog
+            .set_uniform(self.state.texture_uloc, gls::uniform!(int(0)));
 
         self.state.vbo.bind();
         self.state.ebo.bind();
