@@ -179,7 +179,7 @@ impl Drawer {
         gls::active_texture(gl::TEXTURE0);
 
         // Setup program
-        let mvp = self.ortho(options);
+        let mvp = self.get_projection(options);
         self.state.prog.bind();
         self.state.prog.set_uniform(self.state.mvp_uloc, gls::uniform!(mat4(&mvp)));
         self.state.prog.set_uniform(self.state.texture_uloc, gls::uniform!(int(0)));
@@ -285,7 +285,7 @@ impl Drawer {
         gls::scissor(x, y, w, h);
     }
 
-    pub fn ortho(&self, options: &DrawOptions) -> gls::Matrix4 {
+    pub fn get_projection(&self, options: &DrawOptions) -> gls::Matrix4 {
         let fx = options.dpi_factor.0 / options.scale_factor.0;
         let fy = options.dpi_factor.1 / options.scale_factor.1;
         let w = options.display_size.0 as f32 * fx;
