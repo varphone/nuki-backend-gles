@@ -2,8 +2,15 @@ use gls::{gl, prelude::Bindable, GLfloat, GLint, GLsizei, GLsizeiptr, GLubyte, G
 use nuki::{
     Allocator, AntiAliasing, Buffer, Context, ConvertConfig, DrawNullTexture,
     DrawVertexLayoutAttribute, DrawVertexLayoutElements, DrawVertexLayoutFormat, FontAtlas,
-    FontAtlasFormat, Handle, Rect, Vec2, Vec2i,
+    FontAtlasFormat, Handle, Rect,
 };
+
+macro_rules! offset_of {
+    ($t:ty, $field:ident) => {{
+        const X: *const $t = ::std::mem::align_of::<$t>() as *const $t;
+        unsafe { (&(*X).$field as *const _ as usize) - (X as usize) }
+    }};
+}
 
 #[derive(Clone, Default)]
 struct RenderState {
@@ -23,7 +30,7 @@ struct RenderState {
 }
 
 impl RenderState {
-    pub fn new(alloc: &mut Allocator, max_vertex_buffer: usize, max_element_buffer: usize) -> Self {
+    pub fn new(max_vertex_buffer: usize, max_element_buffer: usize) -> Self {
         let mut state: Self = Default::default();
 
         state.vbo = gls::Buffer::new_array();
@@ -44,9 +51,9 @@ impl RenderState {
         state.texture_uloc = state.prog.locate_uniform("u_texture").unwrap_or(-1);
 
         state.vs = std::mem::size_of::<Vertex>() as GLsizei;
-        state.vp = unsafe { &(*(::std::ptr::null::<Vertex>())).position as *const _ as GLsizei };
-        state.vt = unsafe { &(*(::std::ptr::null::<Vertex>())).uv as *const _ as GLsizei };
-        state.vc = unsafe { &(*(::std::ptr::null::<Vertex>())).col as *const _ as GLsizei };
+        state.vp = offset_of!(Vertex, position) as GLsizei;
+        state.vt = offset_of!(Vertex, uv) as GLsizei;
+        state.vc = offset_of!(Vertex, col) as GLsizei;
 
         state
     }
@@ -124,7 +131,11 @@ pub struct Drawer {
 }
 
 impl Drawer {
-    pub fn new(alloc: &mut Allocator, max_vertex_buffer: usize, max_element_buffer: usize) -> Self {
+    pub fn new(
+        _alloc: &mut Allocator,
+        max_vertex_buffer: usize,
+        max_element_buffer: usize,
+    ) -> Self {
         let vertex_layout = DrawVertexLayoutElements::new(&[
             (
                 DrawVertexLayoutAttribute::Position,
@@ -158,13 +169,13 @@ impl Drawer {
         config.set_vertex_layout(&vertex_layout);
         config.set_vertex_size(std::mem::size_of::<Vertex>());
         Self {
-            cmds: Buffer::new(alloc),
-            vbuf: Buffer::with_size(alloc, max_vertex_buffer),
-            ebuf: Buffer::with_size(alloc, max_element_buffer),
-            config: config,
-            vertex_layout: vertex_layout,
+            cmds: Buffer::new(_alloc),
+            vbuf: Buffer::with_size(_alloc, max_vertex_buffer),
+            ebuf: Buffer::with_size(_alloc, max_element_buffer),
+            config,
+            vertex_layout,
             null: Default::default(),
-            state: RenderState::new(alloc, max_vertex_buffer, max_element_buffer),
+            state: RenderState::new(max_vertex_buffer, max_element_buffer),
         }
     }
 
@@ -249,7 +260,7 @@ impl Drawer {
             }
 
             let count = cmd.elem_count();
-            let mut id = cmd.texture().id().unwrap();
+            let id = cmd.texture().id().unwrap();
             self.clip_rect(cmd.clip_rect(), options);
             gls::bind_texture(gl::TEXTURE_2D, id as GLuint);
             gls::draw_elements(
