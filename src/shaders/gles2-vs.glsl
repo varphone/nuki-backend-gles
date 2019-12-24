@@ -1,15 +1,16 @@
 #version 100
 
-uniform mat4 ProjMtx;
-attribute vec2 Position;
-attribute vec2 TexCoord;
-attribute vec4 Color;
-varying vec2 Frag_UV;
-varying vec4 Frag_Color;
+attribute vec2 a_position;
+attribute vec2 a_texcoord;
+attribute vec4 a_color;
+uniform mat4 u_mvp;
+
+varying vec2 v_uv;
+varying vec4 v_color;
 
 void main()
 {
-    Frag_UV = TexCoord;
-    Frag_Color = Color;
-    gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
+    v_uv = a_texcoord;
+    v_color = a_color;
+    gl_Position = u_mvp * vec4(a_position.xy, 0, 1);
 }
