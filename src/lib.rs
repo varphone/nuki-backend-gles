@@ -240,18 +240,8 @@ impl Drawer {
 
         ctx.convert(&mut self.cmds, &mut self.vbuf, &mut self.ebuf, &self.config);
 
-        let (_, vlen, _, _) = self.vbuf.info();
-        let (_, elen, _, _) = self.ebuf.info();
-
-        let vbytes = unsafe {
-            std::slice::from_raw_parts::<u8>(self.vbuf.memory_const() as *const u8, vlen)
-        };
-        let ebytes = unsafe {
-            std::slice::from_raw_parts::<u8>(self.ebuf.memory_const() as *const u8, elen)
-        };
-
-        self.state.vbo.update(vbytes);
-        self.state.ebo.update(ebytes);
+        self.state.vbo.update(self.vbuf.as_bytes());
+        self.state.ebo.update(self.ebuf.as_bytes());
 
         let mut eptr: *mut u16 = std::ptr::null_mut();
         for cmd in ctx.draw_command_iterator(&self.cmds) {
