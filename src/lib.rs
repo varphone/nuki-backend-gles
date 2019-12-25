@@ -281,13 +281,19 @@ impl Drawer {
 
     #[inline]
     pub fn clip_rect(&self, rect: &Rect, options: &DrawOptions) {
-        let fx = options.dpi_factor.0 / options.scale_factor.0;
-        let fy = options.dpi_factor.1 / options.scale_factor.1;
-        let x = (rect.x * fx) as GLint;
-        let y = ((options.display_size.1 as f32 - (rect.y + rect.h)) * fy) as GLint;
-        let w = (rect.w * fx) as GLsizei;
-        let h = (rect.h * fy) as GLsizei;
-        gls::scissor(x, y, w, h);
+        let dw = options.display_size.0 as f32;
+        let dh = options.display_size.1 as f32;
+        if rect.x == -8192.0 && rect.y == -8192.0 && rect.w == 16384.0 && rect.h == 16384.0 {
+            gls::scissor(0, 0, dw as GLsizei, dh as GLsizei);
+        } else {
+            let fx = options.dpi_factor.0 * options.scale_factor.0;
+            let fy = options.dpi_factor.1 * options.scale_factor.1;
+            let x = (rect.x * fx) as GLint;
+            let w = (rect.w * fx) as GLsizei;
+            let h = (rect.h * fy) as GLsizei;
+            let y = (dh - rect.y - h as f32) as GLint;
+            gls::scissor(x, y, w, h);
+        }
     }
 
     pub fn get_projection(&self, options: &DrawOptions) -> gls::Matrix4 {
