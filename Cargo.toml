@@ -17,4 +17,4 @@ gls = "0.1"
 nuki = "0.1"
 
 [target.'cfg(unix)'.dev-dependencies]
-egl = { git = "https://github.com/varphone/egl-rs", rev = "HEAD" }
+egls = "0.1"
