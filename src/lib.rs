@@ -4,6 +4,8 @@ use nuki::{
     DrawVertexLayoutAttribute, DrawVertexLayoutElements, DrawVertexLayoutFormat, FontAtlas,
     FontAtlasFormat, Handle, Rect,
 };
+use std::rc::Rc;
+use std::cell::RefCell;
 
 macro_rules! offset_of {
     ($t:ty, $field:ident) => {{
@@ -13,11 +15,11 @@ macro_rules! offset_of {
 }
 
 #[derive(Clone, Default)]
-struct RenderState {
+struct RenderState<'a> {
     vbo: gls::Buffer,
     ebo: gls::Buffer,
     prog: gls::Program,
-    font_texs: Vec<gls::Texture>,
+    font_texs: Vec<Rc<gls::Texture<'a>>>,
     position_aloc: GLint,
     texcoord_aloc: GLint,
     color_aloc: GLint,
@@ -29,7 +31,7 @@ struct RenderState {
     vc: GLsizei,
 }
 
-impl RenderState {
+impl<'a> RenderState<'a> {
     pub fn new(max_vertex_buffer: usize, max_element_buffer: usize) -> Self {
         let mut state: Self = Default::default();
 
@@ -58,7 +60,7 @@ impl RenderState {
         state
     }
 
-    pub fn add_font_texture(&mut self, image: &[u8], width: u32, height: u32) -> Handle {
+    pub fn add_font_texture(&mut self, image: &'a [u8], width: u32, height: u32) -> Handle {
         let tex = gls::TextureLoader::default()
             .with_bytes(image)
             .with_size(width as usize, height as usize)
@@ -68,7 +70,7 @@ impl RenderState {
             .load()
             .unwrap();
         let handle = Handle::from_id(tex.id() as i32);
-        self.font_texs.push(tex);
+        self.font_texs.push(Rc::new(tex));
         handle
     }
 }
@@ -128,7 +130,7 @@ pub struct Drawer<'a> {
     config: ConvertConfig,
     vertex_layout: DrawVertexLayoutElements,
     null: DrawNullTexture,
-    state: RenderState,
+    state: RefCell<RenderState<'a>>,
 }
 
 impl<'a> Drawer<'a> {
@@ -177,7 +179,7 @@ impl<'a> Drawer<'a> {
             config,
             vertex_layout,
             null: Default::default(),
-            state: RenderState::new(max_vertex_buffer, max_element_buffer),
+            state: RefCell::new(RenderState::new(max_vertex_buffer, max_element_buffer)),
         }
     }
 
@@ -191,44 +193,46 @@ impl<'a> Drawer<'a> {
         gls::enable(gl::SCISSOR_TEST);
         gls::active_texture(gl::TEXTURE0);
 
+        let state = self.state.borrow();
+
         // Setup program
         let mvp = self.get_projection(options);
-        self.state.prog.bind();
-        self.state
+        state.prog.bind();
+        state
             .prog
-            .set_uniform(self.state.mvp_uloc, gls::uniform!(mat4(&mvp)));
-        self.state
+            .set_uniform(state.mvp_uloc, gls::uniform!(mat4(&mvp)));
+        state
             .prog
-            .set_uniform(self.state.texture_uloc, gls::uniform!(int(0)));
+            .set_uniform(state.texture_uloc, gls::uniform!(int(0)));
 
-        self.state.vbo.bind();
-        self.state.ebo.bind();
+        state.vbo.bind();
+        state.ebo.bind();
 
         let a_position = gls::VertexAttrib::new(
-            self.state.position_aloc as GLuint,
+            state.position_aloc as GLuint,
             2,
             gl::FLOAT,
             gl::FALSE,
-            self.state.vs,
-            self.state.vp as GLsizeiptr,
+            state.vs,
+            state.vp as GLsizeiptr,
         );
 
         let a_texcoord = gls::VertexAttrib::new(
-            self.state.texcoord_aloc as GLuint,
+            state.texcoord_aloc as GLuint,
             2,
             gl::FLOAT,
             gl::FALSE,
-            self.state.vs,
-            self.state.vt as GLsizeiptr,
+            state.vs,
+            state.vt as GLsizeiptr,
         );
 
         let a_color = gls::VertexAttrib::new(
-            self.state.color_aloc as GLuint,
+            state.color_aloc as GLuint,
             4,
             gl::UNSIGNED_BYTE,
             gl::TRUE,
-            self.state.vs,
-            self.state.vc as GLsizeiptr,
+            state.vs,
+            state.vc as GLsizeiptr,
         );
 
         a_position.bind();
@@ -242,8 +246,8 @@ impl<'a> Drawer<'a> {
 
         ctx.convert(&mut self.cmds, &mut self.vbuf, &mut self.ebuf, &self.config);
 
-        self.state.vbo.update(self.vbuf.as_bytes());
-        self.state.ebo.update(self.ebuf.as_bytes());
+        state.vbo.update(self.vbuf.as_bytes());
+        state.ebo.update(self.ebuf.as_bytes());
 
         let mut eptr: *mut u16 = std::ptr::null_mut();
         for cmd in ctx.draw_command_iterator(&self.cmds) {
@@ -270,16 +274,24 @@ impl<'a> Drawer<'a> {
         gls::disable(gl::SCISSOR_TEST);
     }
 
-    pub fn add_font_texture(&mut self, data: &[u8], width: u32, height: u32) -> Handle {
-        self.state.add_font_texture(data, width, height)
+    pub fn add_font_texture(&self, data: &'a [u8], width: u32, height: u32) -> Handle {
+        let mut state = self.state.borrow_mut();
+        state.add_font_texture(data, width, height)
     }
 
-    pub fn bake_font_atlas(&mut self, atlas: &mut FontAtlas) -> Handle {
-        let (image, w, h) = atlas.bake(FontAtlasFormat::Rgba32);
-        let handle = self.add_font_texture(image, w, h);
-        atlas.end(handle, Some(&mut self.null));
+/*
+    pub fn bake_font_atlas(&self, atlas: &'a mut FontAtlas) -> Handle {
+        let mut handle: Handle = Default::default();
+        {
+            let (image, w, h) = atlas.bake(FontAtlasFormat::Rgba32);
+            handle = self.add_font_texture(image, w, h);
+        }
+        {
+            atlas.end(handle, Some(&mut self.null));
+        }
         handle
     }
+*/
 
     #[inline]
     pub fn clip_rect(&self, rect: &Rect, options: &DrawOptions) {
@@ -304,6 +316,14 @@ impl<'a> Drawer<'a> {
         let w = options.display_size.0 as f32 * fx;
         let h = options.display_size.1 as f32 * fy;
         gls::Matrix4::new_orthographic(0.0, w, h, 0.0, -1.0, 1.0)
+    }
+
+    pub fn get_null(&self) -> &DrawNullTexture {
+        &self.null
+    }
+
+    pub fn get_null_mut(&mut self) -> &mut DrawNullTexture {
+        &mut self.null
     }
 }
 
