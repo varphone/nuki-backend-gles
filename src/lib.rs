@@ -287,10 +287,10 @@ impl<'a> Drawer<'a> {
         } else {
             let fx = options.dpi_factor.0 * options.scale_factor.0;
             let fy = options.dpi_factor.1 * options.scale_factor.1;
-            let x = (rect.x * fx) as GLint;
-            let w = (rect.w * fx) as GLsizei;
-            let h = (rect.h * fy) as GLsizei;
-            let y = (dh - rect.y - h as f32) as GLint;
+            let x = (rect.x * fx).floor() as GLint;
+            let w = (rect.w * fx).ceil() as GLsizei;
+            let h = (rect.h * fy).ceil() as GLsizei;
+            let y = (dh - rect.y - h as f32).floor() as GLint;
             gls::scissor(x, y, w, h);
         }
     }
@@ -298,8 +298,8 @@ impl<'a> Drawer<'a> {
     pub fn get_projection(&self, options: &DrawOptions) -> gls::Matrix4 {
         let fx = options.dpi_factor.0 / options.scale_factor.0;
         let fy = options.dpi_factor.1 / options.scale_factor.1;
-        let w = options.display_size.0 as f32 * fx;
-        let h = options.display_size.1 as f32 * fy;
+        let w = (options.display_size.0 as f32 * fx).ceil();
+        let h = (options.display_size.1 as f32 * fy).ceil();
         gls::Matrix4::new_orthographic(0.0, w, h, 0.0, -1.0, 1.0)
     }
 
