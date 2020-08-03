@@ -282,7 +282,11 @@ impl<'a> Drawer<'a> {
     pub fn clip_rect(&self, rect: &Rect, options: &DrawOptions) {
         let dw = options.display_size.0 as f32;
         let dh = options.display_size.1 as f32;
-        if rect.x == -8192.0 && rect.y == -8192.0 && rect.w == 16384.0 && rect.h == 16384.0 {
+        if (rect.x - -8192.0).abs() < f32::EPSILON
+            && (rect.y - -8192.0).abs() < f32::EPSILON
+            && (rect.w - 16384.0).abs() < f32::EPSILON
+            && (rect.h - 16384.0).abs() < f32::EPSILON
+        {
             gls::scissor(0, 0, dw as GLsizei, dh as GLsizei);
         } else {
             let fx = options.dpi_factor.0 * options.scale_factor.0;
