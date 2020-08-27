@@ -1,6 +1,6 @@
 ﻿[package]
 name = "nuki-backend-gles"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Varphone Wong <varphone@qq.com>"]
 keywords = ["ui", "widgets", "gui", "interface", "graphics"]
 description = "An OpenGL ES drawing backend for the Rust bindings for the Nuklear 2D immediate GUI library"
