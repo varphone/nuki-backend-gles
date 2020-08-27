@@ -10,6 +10,7 @@ platform:
 steps:
 - name: check format and lints
   commands:
+  - cargo update
   - cargo fmt -- --check
   - cargo clippy
 
