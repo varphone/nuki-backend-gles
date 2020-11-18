@@ -122,7 +122,7 @@ impl DrawOptions {
 
 #[derive(Clone)]
 pub struct Drawer<'a> {
-    alloc: Allocator,
+    alloc: &'a Allocator,
     cmds: Buffer,
     vbuf: Buffer,
     ebuf: Buffer,
@@ -133,7 +133,7 @@ pub struct Drawer<'a> {
 }
 
 impl<'a> Drawer<'a> {
-    pub fn new(alloc: Allocator, max_vertex_buffer: usize, max_element_buffer: usize) -> Self {
+    pub fn new(alloc: &'a Allocator, max_vertex_buffer: usize, max_element_buffer: usize) -> Self {
         let vertex_layout = DrawVertexLayoutElements::new(&[
             (
                 DrawVertexLayoutAttribute::Position,
@@ -167,10 +167,10 @@ impl<'a> Drawer<'a> {
         config.set_vertex_layout(&vertex_layout);
         config.set_vertex_size(std::mem::size_of::<Vertex>());
         Self {
-            cmds: Buffer::new(&alloc),
-            vbuf: Buffer::with_size(&alloc, max_vertex_buffer),
-            ebuf: Buffer::with_size(&alloc, max_element_buffer),
             alloc,
+            cmds: Buffer::new(alloc),
+            vbuf: Buffer::with_size(alloc, max_vertex_buffer),
+            ebuf: Buffer::with_size(alloc, max_element_buffer),
             config,
             vertex_layout,
             null: Default::default(),
