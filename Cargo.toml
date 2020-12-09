@@ -6,8 +6,8 @@ keywords = ["ui", "widgets", "gui", "interface", "graphics"]
 description = "An OpenGL ES drawing backend for the Rust bindings for the Nuklear 2D immediate GUI library"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/varphone/nuki-backend-gles.git"
-homepage = "https://github.com/varphone/nuki-backend-gles"
+repository = "https://github.com/vaxpl/nuki-backend-gles.git"
+homepage = "https://github.com/vaxpl/nuki-backend-gles"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
