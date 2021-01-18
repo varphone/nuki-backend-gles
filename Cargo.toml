@@ -14,7 +14,7 @@ edition = "2018"
 
 [dependencies]
 gls = "0.1"
-nuki = "0.2"
+nuki = "0.3"
 
 [target.'cfg(unix)'.dev-dependencies]
 egls = "0.1"
